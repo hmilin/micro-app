@@ -783,11 +783,19 @@ export default class CreateApp implements AppInterface {
   }
 
   public querySelector (selectors: string): Node | null {
-    return this.container ? globalEnv.rawElementQuerySelector.call(this.container, selectors) : null
+    return this.container instanceof ShadowRoot
+      ? this.container.querySelector(selectors)
+      : this.container
+      ? globalEnv.rawElementQuerySelector.call(this.container, selectors)
+      : null
   }
 
   public querySelectorAll (selectors: string): NodeListOf<Node> {
-    return this.container ? globalEnv.rawElementQuerySelectorAll.call(this.container, selectors) : []
+    return this.container instanceof ShadowRoot
+      ? this.container.querySelectorAll(selectors)
+      : this.container
+      ? globalEnv.rawElementQuerySelectorAll.call(this.container, selectors)
+      : []
   }
 
   /**
