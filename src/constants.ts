@@ -85,6 +85,7 @@ export const SCOPE_WINDOW_EVENT = [
 ]
 
 // on event bound to child app window
+// TODO: with和iframe处理方式不同，需修改
 export const SCOPE_WINDOW_ON_EVENT = [
   'onpopstate',
   'onhashchange',

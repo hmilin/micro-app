@@ -22,7 +22,6 @@ import {
 } from './constants'
 import {
   isFunction,
-  cloneContainer,
   isPromise,
   logError,
   getRootContainer,
@@ -261,7 +260,7 @@ export default class CreateApp implements AppInterface {
          */
         this.sandBox?.rebuildEffectSnapshot()
         // current this.container is <div prerender='true'></div>
-        cloneContainer(container as Element, this.container as Element, false)
+        this.cloneContainer(container as Element, this.container as Element, false)
         /**
          * set this.container to <micro-app></micro-app>
          * NOTE:
@@ -304,7 +303,7 @@ export default class CreateApp implements AppInterface {
         })
 
         // TODO: 将所有cloneContainer中的'as Element'去掉，兼容shadowRoot的场景
-        cloneContainer(this.container as Element, this.source.html as Element, !this.umdMode)
+        this.cloneContainer(this.container as Element, this.source.html as Element, !this.umdMode)
 
         this.sandBox?.start({
           umdMode: this.umdMode,
@@ -532,7 +531,7 @@ export default class CreateApp implements AppInterface {
     unmountcb,
   }: UnmountParam): void {
     if (this.umdMode && this.container && !destroy) {
-      cloneContainer(this.source.html as Element, this.container, false)
+      this.cloneContainer(this.source.html as Element, this.container, false)
     }
 
     /**
@@ -615,7 +614,7 @@ export default class CreateApp implements AppInterface {
     if (this.loadSourceLevel !== 2) {
       getRootContainer(this.container!).unmount()
     } else {
-      this.container = cloneContainer(
+      this.container = this.cloneContainer(
         pureCreateElement('div'),
         this.container as Element,
         false,
@@ -645,7 +644,7 @@ export default class CreateApp implements AppInterface {
 
     this.setKeepAliveState(keepAliveStates.KEEP_ALIVE_SHOW)
 
-    this.container = cloneContainer(
+    this.container = this.cloneContainer(
       container,
       this.container as Element,
       false,
@@ -694,6 +693,40 @@ export default class CreateApp implements AppInterface {
       lifeCycles.ERROR,
       e,
     )
+  }
+
+  /**
+   * Parse htmlString to DOM
+   * NOTE: iframe sandbox will use DOMParser of iframeWindow, with sandbox will use DOMParser of base app
+   * @param htmlString DOMString
+   * @returns parsed DOM
+   */
+  public parseHtmlString (htmlString: string): HTMLElement {
+    const DOMParser = this.sandBox?.proxyWindow
+      ? this.sandBox.proxyWindow.DOMParser
+      : globalEnv.rawWindow.DOMParser
+    return (new DOMParser()).parseFromString(htmlString, 'text/html').body
+  }
+
+  /**
+   * clone origin elements to target
+   * @param origin Cloned element
+   * @param target Accept cloned elements
+   * @param deep deep clone or transfer dom
+   */
+  private cloneContainer <T extends Element | ShadowRoot, Q extends Element | ShadowRoot> (
+    target: Q,
+    origin: T,
+    deep: boolean,
+  ): Q {
+    // 在基座接受到afterhidden方法后立即执行unmount，彻底destroy应用时，因为unmount时同步执行，所以this.container为null后才执行cloneContainer
+    if (origin) {
+      target.innerHTML = ''
+      Array.from(deep ? this.parseHtmlString(origin.innerHTML).childNodes : origin.childNodes).forEach((node) => {
+        target.appendChild(node)
+      })
+    }
+    return target
   }
 
   /**

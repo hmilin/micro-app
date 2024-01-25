@@ -59,51 +59,51 @@ window.addEventListener('appstate-change', function (e) {
 })
 
 /* ----------------------分割线-默认模式--------------------- */
-// ReactDOM.render(
-//   <React.StrictMode>
-//     <ConfigProvider prefixCls="react16">
-//       <Router />
-//     </ConfigProvider>
-//   </React.StrictMode>,
-//   document.getElementById('root')
-// );
+ReactDOM.render(
+  <React.StrictMode>
+    <ConfigProvider prefixCls="react16">
+      <Router />
+    </ConfigProvider>
+  </React.StrictMode>,
+  document.getElementById('root')
+);
 
-// // 注册unmount函数，卸载时会自动执行
-// window.unmount = () => {
-//   ReactDOM.unmountComponentAtNode(document.getElementById('root'));
-//   console.log('微应用react16卸载了 -- 默认模式');
-// }
+// 注册unmount函数，卸载时会自动执行
+window.unmount = () => {
+  ReactDOM.unmountComponentAtNode(document.getElementById('root'));
+  console.log('微应用react16卸载了 -- 默认模式');
+}
 
-// console.timeEnd('react#16');
+console.timeEnd('react#16');
 
 /* ----------------------分割线-umd模式--------------------- */
-// 👇 将渲染操作放入 mount 函数，子应用初始化时会自动执行
-window.mount = (data) => {
-  ReactDOM.render(
-    <React.StrictMode>
-      {/* 自定义antd class前缀 */}
-      <ConfigProvider prefixCls="react16">
-        <Router />
-      </ConfigProvider>
-    </React.StrictMode>,
-    document.getElementById('root')
-  );
-  console.log('微应用react16渲染了 -- UMD模式', data);
-  console.timeEnd('react#16');
-}
+// // 👇 将渲染操作放入 mount 函数，子应用初始化时会自动执行
+// window.mount = (data) => {
+//   ReactDOM.render(
+//     <React.StrictMode>
+//       {/* 自定义antd class前缀 */}
+//       <ConfigProvider prefixCls="react16">
+//         <Router />
+//       </ConfigProvider>
+//     </React.StrictMode>,
+//     document.getElementById('root')
+//   );
+//   console.log('微应用react16渲染了 -- UMD模式', data);
+//   console.timeEnd('react#16');
+// }
 
-// 👇 将卸载操作放入 unmount 函数
-window.unmount = (data) => {
-  // 卸载时关闭弹窗
-  notification.destroy()
-  ReactDOM.unmountComponentAtNode(document.getElementById('root'));
-  console.log('微应用react16卸载了 -- UMD模式', data);
-}
+// // 👇 将卸载操作放入 unmount 函数
+// window.unmount = (data) => {
+//   // 卸载时关闭弹窗
+//   notification.destroy()
+//   ReactDOM.unmountComponentAtNode(document.getElementById('root'));
+//   console.log('微应用react16卸载了 -- UMD模式', data);
+// }
 
-// 如果不在微前端环境，则直接执行mount渲染
-if (!window.__MICRO_APP_ENVIRONMENT__) {
-  window.mount()
-}
+// // 如果不在微前端环境，则直接执行mount渲染
+// if (!window.__MICRO_APP_ENVIRONMENT__) {
+//   window.mount()
+// }
 
 /* ---------------------- micro-app 自定义全局事件 --------------------- */
 
@@ -335,10 +335,11 @@ if (process.env.NODE_ENV !== 'production') {
 
 
 /* ---------------------- 插件相关 --------------------- */
+console.assert(window.scopeKey1 === undefined, '初始化前 window.scopeKey1 应该为 undefined')
 window.scopeKey1 = 'scopeKey1'
 window.scopeKey2 = 'scopeKey2'
 window.scopeKey3 = 'scopeKey3'
-window.scopeKey4 = 'scopeKey4'
+// window.scopeKey4 = 'scopeKey4'
 window.scopeKey5 = 'scopeKey5'
 window.scopeKey6 = 'scopeKey6'
 
@@ -349,18 +350,25 @@ window.escapeKey4 = 'escapeKey4'
 window.escapeKey5 = 'escapeKey5' // should be undefined in rawWindow
 window.escapeKey6 = 'escapeKey6' // should be undefined in rawWindow
 
+// scopeKeyPure1、scopeKeyPure2为绑定变量，但子应用没有重新定义
+console.assert(window.scopeKeyPure1 === undefined, 'window.scopeKeyPure1 错误')
+console.assert(('scopeKeyPure1' in window) === false , 'scopeKeyPure1 in window 应该为false')
+console.assert(window.scopeKeyPure2 === undefined, 'window.scopeKeyPure2 错误')
+console.assert(('scopeKeyPure2' in window) === false , 'scopeKeyPure2 in window 应该为false')
 
-// console.log('scopeProperties scopeKeySpe: ', scopeKeySpe)
-// console.log('scopeProperties window.scopeKeySpe: ', window.scopeKeySpe)
+// scopeKey1被重新定义，并且不会泄漏到原生window上，所以scopeKey1在rawWindow不存在
+console.assert(window.scopeKey1 === 'scopeKey1', 'window.scopeKey1 错误')
+console.assert(rawWindow.scopeKey1 === undefined, 'rawWindow.scopeKey1 错误')
+console.assert(('scopeKey1' in window) === true , 'scopeKey1 in window 应该为true')
+console.assert(('scopeKey1' in rawWindow) === false , 'scopeKey1 in rawWindow 应该为false')
 
-// console.log('scopeProperties Vue: ', Vue)
-// console.log('scopeProperties window.Vue: ', window.Vue)
+// Vue是系统默认绑定变量
+console.assert(window.Vue === undefined, 'window.Vue 应该为false')
+console.assert(('Vue' in window) === false, 'Vue in window 应该为false')
+window.Vue = '自定义Vue'
+console.assert(window.Vue === '自定义Vue', 'window.Vue 应该为自定义Vue')
 
-// window.Vue = Vue ? Vue : 'child Vue'
-
-// console.log('scopeProperties Vue: ', Vue)
-// console.log('scopeProperties window.Vue: ', window.Vue)
-
+console.assert(rawWindow.escapeKey5 === undefined, 'rawWindow.escapeKey5 结果错误')
 
 
 /* ---------------------- pureCreateElement & removeDomScope --------------------- */

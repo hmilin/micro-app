@@ -19,7 +19,11 @@ import {
   rawDefineProperty,
   rawHasOwnProperty,
   removeDomScope,
+  getRootContainer,
 } from '../../libs/utils'
+import {
+  appInstanceMap,
+} from '../../create_app'
 
 /**
  * patch window of child app
@@ -35,7 +39,7 @@ export function patchWindow (
 ): CommonEffectHook {
   patchWindowProperty(microAppWindow)
   createProxyWindow(appName, microAppWindow, sandbox)
-  return patchWindowEffect(microAppWindow)
+  return patchWindowEffect(microAppWindow, appName)
 }
 
 /**
@@ -96,7 +100,7 @@ function createProxyWindow (
       return bindFunctionToRawTarget(Reflect.get(rawWindow, key), rawWindow)
     },
     set: (target: microAppWindowType, key: PropertyKey, value: unknown): boolean => {
-      if (sandbox.adapter.escapeSetterKeyList.includes(key)) {
+      if (sandbox.rawWindowScopeKeyList.includes(key)) {
         Reflect.set(rawWindow, key, value)
       } else if (
         // target.hasOwnProperty has been rewritten
@@ -116,7 +120,10 @@ function createProxyWindow (
 
         sandbox.injectedKeys.add(key)
       } else {
-        !Reflect.has(target, key) && sandbox.injectedKeys.add(key)
+        // all scopeProperties will add to injectedKeys, use for key in window (Proxy.has)
+        if (!Reflect.has(target, key) || sandbox.scopeProperties.includes(key)) {
+          sandbox.injectedKeys.add(key)
+        }
         Reflect.set(target, key, value)
       }
 
@@ -124,7 +131,8 @@ function createProxyWindow (
         (
           sandbox.escapeProperties.includes(key) ||
           (
-            sandbox.adapter.staticEscapeProperties.includes(key) &&
+            // TODO: staticEscapeProperties 合并到 escapeProperties
+            sandbox.staticEscapeProperties.includes(key) &&
             !Reflect.has(rawWindow, key)
           )
         ) &&
@@ -137,19 +145,19 @@ function createProxyWindow (
       return true
     },
     has: (target: microAppWindowType, key: PropertyKey): boolean => {
+      /**
+       * Some keywords, such as Vue, need to meet two conditions at the same time:
+       * 1. window.Vue --> undefined
+       * 2. 'Vue' in window --> false
+       * Issue https://github.com/micro-zoe/micro-app/issues/686
+       */
       if (sandbox.scopeProperties.includes(key)) {
-        /**
-         * Some keywords, such as Vue, need to meet two conditions at the same time:
-         * 1. 'Vue' in window --> false
-         * 2. Vue (top level variable) // undefined
-         * Issue https://github.com/micro-zoe/micro-app/issues/686
-         */
-        if (sandbox.adapter.staticScopeProperties.includes(key)) {
-          return !!target[key]
+        if (sandbox.injectedKeys.has(key)) {
+          return Reflect.has(target, key) // true
         }
-        return key in target
+        return !!target[key] // false
       }
-      return key in target || key in rawWindow
+      return Reflect.has(target, key) || Reflect.has(rawWindow, key)
     },
     // Object.getOwnPropertyDescriptor(window, key)
     getOwnPropertyDescriptor: (target: microAppWindowType, key: PropertyKey): PropertyDescriptor|undefined => {
@@ -198,7 +206,7 @@ function createProxyWindow (
  * Rewrite side-effect events
  * @param microAppWindow micro window
  */
-function patchWindowEffect (microAppWindow: microAppWindowType): CommonEffectHook {
+function patchWindowEffect (microAppWindow: microAppWindowType, appName: string): CommonEffectHook {
   const eventListenerMap = new Map<string, Set<MicroEventListener>>()
   const sstEventListenerMap = new Map<string, Set<MicroEventListener>>()
   const intervalIdMap = new Map<number, timeInfo>()
@@ -214,8 +222,19 @@ function patchWindowEffect (microAppWindow: microAppWindowType): CommonEffectHoo
     rawClearTimeout,
   } = globalEnv
 
-  function getEventTarget (type: string): Window {
-    return SCOPE_WINDOW_EVENT.includes(type) ? microAppWindow : rawWindow
+  /**
+   * All events will bind to microAppElement or rawWindow
+   * Some special events, such as popstate、load、unmount、appstate-change、statechange..., bind to microAppElement, others bind to rawWindow
+   * NOTE:
+   *  1、At first, microAppWindow = new EventTarget(), but it can not compatible with iOS 14 or below, so microAppElement was used instead. (2024.1.22)
+   * @param type event name
+   * @returns microAppElement/rawWindow
+   */
+  function getEventTarget (type: string): EventTarget {
+    if (SCOPE_WINDOW_EVENT.includes(type) && appInstanceMap.get(appName)?.container) {
+      return getRootContainer(appInstanceMap.get(appName)!.container!)
+    }
+    return rawWindow
   }
 
   /**

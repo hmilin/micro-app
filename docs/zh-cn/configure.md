@@ -194,7 +194,7 @@ keep-alive的优先级小于[destroy](/zh-cn/configure?id=destroy)，当两者�
 > 开启fiber后会降低子应用的渲染速度。
 
 
-## shadowDOM
+<!-- ## shadowDOM
 - Desc: `开启shadowDOM`
 - Type: `string(boolean)`
 - Default: `false`
@@ -205,7 +205,7 @@ keep-alive的优先级小于[destroy](/zh-cn/configure?id=destroy)，当两者�
 
 shadowDOM具有更强的样式隔离能力，开启后，`<micro-app>`标签会成为一个真正的WebComponent。
 
-但shadowDOM在React框架及一些UI库中的兼容不是很好，经常会出现一些不可预料的问题，除非你很清楚它会带来的问题并有信心解决，否则不建议使用。
+但shadowDOM在React框架及一些UI库中的兼容不是很好，经常会出现一些不可预料的问题，除非你很清楚它会带来的问题并有信心解决，否则不建议使用。 -->
 
 
 ## 全局配置
@@ -217,17 +217,17 @@ shadowDOM具有更强的样式隔离能力，开启后，`<micro-app>`标签会�
 import microApp from '@micro-zoe/micro-app'
 
 microApp.start({
-  iframe: true, // 默认值false
-  inline: true, // 默认值false
-  destroy: true, // 默认值false
-  shadowDOM: true, // 默认值false
-  ssr: true, // 默认值false
-  'disable-scopecss': true, // 默认值false
-  'disable-sandbox': true, // 默认值false
-  'keep-alive': true, // 默认值false
-  'disable-memory-router': true, // 默认值false
-  'keep-router-state': true, // 默认值false
-  'disable-patch-request': true, // 默认值false
+  iframe: true, // 全局开启iframe沙箱，默认为false
+  inline: true, // 全局开启内联script模式运行js，默认为false
+  destroy: true, // 全局开启destroy模式，卸载时强制删除缓存资源，默认为false
+  ssr: true, // 全局开启ssr模式，默认为false
+  'disable-scopecss': true, // 全局禁用样式隔离，默认为false
+  'disable-sandbox': true, // 全局禁用沙箱，默认为false
+  'keep-alive': true, // 全局开启保活模式，默认为false
+  'disable-memory-router': true, // 全局关闭虚拟路由系统，默认值false
+  'keep-router-state': true, // 子应用在卸载时保留路由状态，默认值false
+  'disable-patch-request': true, // 关闭子应用请求的自动补全功能，默认值false
+  iframeSrc: location.origin, // 设置iframe沙箱中iframe的src地址，默认为子应用所在页面地址
 })
 ```
 
@@ -239,7 +239,6 @@ microApp.start({
   iframe='false'
   inline='false'
   destroy='false'
-  shadowDOM='false'
   ssr='false'
   disable-scopecss='false'
   disable-sandbox='false'

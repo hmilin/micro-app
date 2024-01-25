@@ -535,7 +535,7 @@ export function patchElementAndDocument (): void {
         const microDocument = appInstanceMap.get(currentAppName)?.sandBox?.proxyWindow?.document
         if (microDocument) return microDocument
       }
-      const result = globalEnv.rawParentNodeDesc.get.call(this)
+      const result = globalEnv.rawParentNodeDesc.get.call(this) as Node
       /**
        * If parentNode is <micro-app-body>, return rawDocument.body
        * Scenes:

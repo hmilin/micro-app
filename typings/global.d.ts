@@ -65,30 +65,26 @@ declare module '@micro-app/types' {
     destroy?: boolean,
   }
 
-  interface SandBoxAdapter {
+  interface BaseSandboxType {
+    // Properties that can only get and set in microAppWindow, will not escape to rawWindow
+    scopeProperties: PropertyKey[]
+    // Properties that can be escape to rawWindow
+    escapeProperties: PropertyKey[]
+    // Properties newly added to microAppWindow
+    injectedKeys: Set<PropertyKey>
+    // Properties escape to rawWindow, cleared when unmount
+    escapeKeys: Set<PropertyKey>
+    // Sandbox ready state
+    sandboxReady: Promise<void>
     // Variables that can only assigned to rawWindow
-    escapeSetterKeyList: PropertyKey[]
-
+    rawWindowScopeKeyList: PropertyKey[]
     // Variables that can escape to rawWindow
     staticEscapeProperties: PropertyKey[]
-
     // Variables that scoped in child app
     staticScopeProperties: PropertyKey[]
   }
 
-  interface WithSandBoxInterface {
-    // adapter for sandbox
-    adapter: SandBoxAdapter
-    // Scoped global Properties(Properties that can only get and set in microAppWindow, will not escape to rawWindow)
-    scopeProperties: PropertyKey[]
-    // Properties that can be escape to rawWindow
-    escapeProperties: PropertyKey[]
-    // Properties escape to rawWindow, cleared when unmount
-    escapeKeys: Set<PropertyKey>
-    // Properties newly added to microAppWindow
-    injectedKeys: Set<PropertyKey>
-    // sandbox ready state
-    sandboxReady: Promise<void>
+  interface WithSandBoxInterface extends BaseSandboxType {
     // proxy(microWindow)
     proxyWindow: WindowProxy
     // child window
@@ -212,6 +208,8 @@ declare module '@micro-app/types' {
 
     // get keep-alive state
     getKeepAliveState(): string | null
+
+    parseHtmlString(htmlString: string): HTMLElement
 
     // is app unmounted
     isUnmounted (): boolean
@@ -344,6 +342,7 @@ declare module '@micro-app/types' {
     fiber?: boolean
     prefetchLevel?: number
     prefetchDelay?: number
+    iframeSrc?: string
   }
 
   interface OptionsType extends MicroAppConfig {

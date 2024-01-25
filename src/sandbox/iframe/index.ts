@@ -68,10 +68,11 @@ export default class IframeSandbox {
   public escapeKeys = new Set<PropertyKey>()
   public deleteIframeElement: () => void
   public iframe!: HTMLIFrameElement | null
+  // Promise used to mark whether the sandbox is initialized
   public sandboxReady!: Promise<void>
+  public proxyWindow: WindowProxy & microAppWindowType
   public microAppWindow: microAppWindowType
   public proxyLocation!: MicroLocation
-  public proxyWindow: WindowProxy & microAppWindowType
   public baseElement!: HTMLBaseElement
   public microHead!: HTMLHeadElement
   public microBody!: HTMLBodyElement
@@ -80,7 +81,7 @@ export default class IframeSandbox {
     const rawLocation = globalEnv.rawWindow.location
     const browserHost = rawLocation.protocol + '//' + rawLocation.host
 
-    this.deleteIframeElement = this.createIframeElement(appName, browserHost)
+    this.deleteIframeElement = this.createIframeElement(appName, browserHost + rawLocation.pathname)
     this.microAppWindow = this.iframe!.contentWindow
 
     this.patchIframe(this.microAppWindow, (resolve: CallableFunction) => {
@@ -110,17 +111,17 @@ export default class IframeSandbox {
   /**
    * create iframe for sandbox
    * @param appName app name
-   * @param browserHost browser origin
+   * @param browserPath browser origin
    * @returns release callback
    */
   createIframeElement (
     appName: string,
-    browserHost: string,
+    browserPath: string,
   ): () => void {
     this.iframe = pureCreateElement('iframe')
 
     const iframeAttrs: Record<string, string> = {
-      src: browserHost,
+      src: microApp.options.iframeSrc || browserPath,
       style: 'display: none',
       id: appName,
     }
@@ -244,6 +245,7 @@ export default class IframeSandbox {
    * NOTE:
    *  1. execute as early as possible
    *  2. run after patchRouter & createProxyWindow
+   * TODO: 设置为只读变量
    */
   private initStaticGlobalKeys (
     appName: string,
@@ -480,6 +482,7 @@ export default class IframeSandbox {
   }
 
   /**
+   * action before exec scripts when mount
    * Actions:
    * 1. patch static elements from html
    * @param container micro app container

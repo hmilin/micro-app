@@ -5,6 +5,7 @@ import type {
   WithSandBoxInterface,
   microAppWindowType,
 } from '@micro-app/types'
+import microApp from '../../micro_app'
 import globalEnv from '../../libs/global_env'
 import bindFunctionToRawTarget from '../bind_function'
 import {
@@ -15,7 +16,6 @@ import {
 import {
   appInstanceMap,
 } from '../../create_app'
-import microApp from '../../micro_app'
 
 /**
  * create proxyDocument and MicroDocument, rewrite document of child app
